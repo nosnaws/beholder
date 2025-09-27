@@ -1,0 +1,3 @@
+app = "beholder"
+[build]
+  builder = "heroku/builder:24"
