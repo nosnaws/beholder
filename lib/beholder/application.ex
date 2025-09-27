@@ -1,20 +1,40 @@
 defmodule Beholder.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
-  @moduledoc false
-
   use Application
 
   @impl true
   def start(_type, _args) do
-    children = [
-      # Starts a worker by calling: Beholder.Worker.start_link(arg)
-      # {Beholder.Worker, arg}
-    ]
+    children =
+      [
+        Beholder.VoiceTracker,
+        Beholder.Consumer
+      ]
+      |> maybe_add_tidewave()
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Beholder.Supervisor]
-    Supervisor.start_link(children, opts)
+    Supervisor.start_link(children, strategy: :one_for_one, name: Beholder.Supervisor)
+  end
+
+  defp maybe_add_tidewave(children) do
+    if Application.get_env(:beholder, :start_tidewave, false) do
+      bandit_module = Module.concat([:"Elixir", :Bandit])
+      tidewave_module = Module.concat([:"Elixir", :Tidewave])
+
+      if Code.ensure_loaded?(bandit_module) do
+        _ = Application.ensure_all_started(:bandit)
+
+        tidewave_child = %{
+          id: :tidewave_bandit,
+          start: {bandit_module, :start_link, [[plug: tidewave_module, port: 4000]]},
+          restart: :permanent,
+          shutdown: 500,
+          type: :worker
+        }
+
+        [tidewave_child | children]
+      else
+        children
+      end
+    else
+      children
+    end
   end
 end

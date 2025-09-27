@@ -7,7 +7,11 @@ defmodule Beholder.MixProject do
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: [
+        tidewave:
+          "run --no-start --no-halt -e 'Application.ensure_all_started(:bandit); Agent.start(fn -> Bandit.start_link(plug: Tidewave, port: 4000) end)'"
+      ]
     ]
   end
 
@@ -20,11 +24,11 @@ defmodule Beholder.MixProject do
   end
 
   # Run "mix help deps" to learn about dependencies.
-  defp deps do
+  def deps do
     [
-        {:nostrum, "~> 0.10"}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:tidewave, "~> 0.5", only: :dev},
+      {:bandit, "~> 1.0", only: :dev},
+      {:nostrum, "~> 0.10"}
     ]
   end
 end
